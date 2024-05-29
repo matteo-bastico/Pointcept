@@ -697,7 +697,6 @@ class KeyDetTester(TesterBase):
         """
         comm.synchronize()
         record = {}
-        iou_dict = {}
 
         for idx, data_dict in enumerate(self.test_loader):
             end = time.time()
@@ -707,7 +706,8 @@ class KeyDetTester(TesterBase):
             data_name = data_dict.pop("name")
             data_category = data_dict.pop("category")
             coord = copy.deepcopy(data_dict['coord'])
-            pred_save_path = os.path.join(save_path, "{}_pred.npy".format(data_name))
+            pred_save_path = os.path.join(save_path, data_category, "{}_pred.npy".format(data_name))
+            make_dirs(os.path.join(save_path, data_category))
             # If segmentation already exists
             if os.path.isfile(pred_save_path):
                 logger.info(
@@ -767,7 +767,7 @@ class KeyDetTester(TesterBase):
                     # We need also the origin_coord to compute correctly the geodesic distances
                     assert "origin_coord" in data_dict.keys()
                     assert "inverse" in data_dict.keys()
-                    pred = pred[data_dict["inverse"]]
+                    pred = pred[data_dict["inverse"].cpu()]
                     segment = data_dict["origin_segment"]
                     coord = data_dict["origin_coord"]
                 np.save(pred_save_path, pred)
@@ -825,7 +825,7 @@ class KeyDetTester(TesterBase):
             """
             # Added this because it may create some errors because target in
             # intersection_and_union is assumed to be np.ndarray
-            segment = segment.numpy()
+            segment = segment.cpu().numpy()
             intersection, union, target = intersection_and_union(
                 pred, segment, self.cfg.data.num_classes, self.cfg.data.ignore_index
             )
@@ -903,7 +903,6 @@ class KeyDetTester(TesterBase):
             """
             iou_class = intersection / (union + 1e-10)
             accuracy_class = intersection / (target + 1e-10)
-            print(iou_class.shape, accuracy_class.shape)
             mIoU = np.mean(iou_class)
             mAcc = np.mean(accuracy_class)
             allAcc = sum(intersection) / (sum(target) + 1e-10)
@@ -929,8 +928,9 @@ class KeyDetTester(TesterBase):
             category_iou = iou_per_category(record)
             for category, iou in category_iou.items():
                 logger.info(
-                    "Category_{cat} Result: mIoU with distance threshold 0.01: {iou:.4f}".format(
-                        cat=category,
+                    "Category_{cat_id} ({cat}) Result: mIoU with distance threshold 0.01: {iou:.4f}".format(
+                        cat_id=category,
+                        cat=self.cfg.data.test.class_id2names[category],
                         iou=iou
                     )
                 )

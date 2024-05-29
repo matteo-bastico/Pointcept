@@ -45,14 +45,14 @@ model = dict(
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
     criteria=[
-        dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1),
+        dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
         # dict(type="LovaszLoss", mode="multiclass", loss_weight=1.0, ignore_index=-1),
     ],
 )
 
 # scheduler settings
-epoch = 1
-eval_epoch = 1
+epoch = 10
+eval_epoch = 10
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
 optimizer = dict(type="AdamW", lr=0.001, weight_decay=0.01)
@@ -96,7 +96,7 @@ data = dict(
         type=dataset_type,
         split="train",
         data_root=data_root,
-        category="all",
+        category="airplane",
         class_id2names=class_id2names,
         transform=[
             # dict(type="RandomDropout", dropout_ratio=0.2, dropout_application_ratio=0.2),
@@ -132,7 +132,7 @@ data = dict(
         type=dataset_type,
         split="val",
         data_root=data_root,
-        category="all",
+        category="airplane",
         class_id2names=class_id2names,
         transform=[
             dict(
@@ -156,9 +156,11 @@ data = dict(
         type=dataset_type,
         split="test",
         data_root=data_root,
-        category="all",
+        category="airplane",
         class_id2names=class_id2names,
         transform=[
+            dict(type="Copy", keys_dict={"coord": "origin_coord"}),
+            dict(type="Copy", keys_dict={"segment": "origin_segment"}),
             dict(
                 type="GridSample",
                 grid_size=0.01,
@@ -171,7 +173,7 @@ data = dict(
             dict(type="ToTensor"),
             dict(
                 type="Collect",
-                keys=("coord", "grid_coord", "category", "segment", "name"),
+                keys=("coord", "grid_coord", "category", "segment", "name", "inverse", "origin_segment", "origin_coord"),
                 feat_keys=["coord"],
             ),
         ],

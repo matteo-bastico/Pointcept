@@ -133,7 +133,8 @@ class KeyPointNetDataset(Dataset):
                     data = data[: self.num_point]
             coord, color = data[:, 0:3], data[:, 3:6]
             # This is a string (not an int as in classification)
-            category = self.class_id2names[data_shape]
+            # category = self.class_id2names[data_shape]
+            category = data_shape
             # Parse annotations
             keypoints = self.keypoints[data_name]
             segment = np.zeros((coord.shape[0],), dtype=np.int32)
