@@ -47,18 +47,17 @@ class KeyPointNetDataset(Dataset):
         category='all',
         class_id2names=None,
         transform=None,
-        num_points=2048,
+        num_points=None,
         uniform_sampling=True,
         save_record=True,
         test_mode=False,
         test_cfg=None,
         loop=1,
     ):
-        print(test_cfg)
         super().__init__()
         self.data_root = data_root
         self.category = category
-        self.class_id2name = class_id2names
+        self.class_id2names = class_id2names
         self.class_name2id = {v: k for k, v in class_id2names.items()}
         self.class_names = dict(zip(class_id2names.keys(), range(len(class_id2names))))
         self.split = split
@@ -70,6 +69,7 @@ class KeyPointNetDataset(Dataset):
         )  # force make loop = 1 while in test mode
         self.test_mode = test_mode
         self.test_cfg = test_cfg if test_mode else None
+        """
         if test_mode:
             self.test_voxelize = TRANSFORMS.build(self.test_cfg.voxelize)
             self.test_crop = (
@@ -77,7 +77,7 @@ class KeyPointNetDataset(Dataset):
             )
             self.post_transform = Compose(self.test_cfg.post_transform)
             self.aug_transform = [Compose(aug) for aug in self.test_cfg.aug_transform]
-
+        """
         self.data_list = self.get_data_list()
         self.keypoints = self.get_keypoints()
 
@@ -132,7 +132,8 @@ class KeyPointNetDataset(Dataset):
                 else:
                     data = data[: self.num_point]
             coord, color = data[:, 0:3], data[:, 3:6]
-            category = np.array([self.class_names[data_shape]])
+            # This is a string (not an int as in classification)
+            category = self.class_id2names[data_shape]
             # Parse annotations
             keypoints = self.keypoints[data_name]
             segment = np.zeros((coord.shape[0],), dtype=np.int32)
@@ -173,15 +174,71 @@ class KeyPointNetDataset(Dataset):
     
     def prepare_train_data(self, idx):
         data_dict = self.get_data(idx)
+        """
+        # TODO: remove this plot
+        import plotly.graph_objects as go
+        def plot_pointcloud(
+                points,
+                fig=None,
+                name=None,
+                marker=None,
+                row=None,
+                col=None,
+                axis=True,
+                camera=None,
+                bgcolor='rgba(0,0,0,0)'
+        ):
+            data = [go.Scatter3d(
+                x=points[:, 0],
+                y=points[:, 1],
+                z=points[:, 2],
+                mode='markers',
+                name=name,
+                marker=marker,
+                hovertext=list(range(len(points)))
+            )]
+            if fig is None:
+                fig = go.Figure(
+                    data=data,
+                )
+            else:
+                fig.add_trace(data[0], row=row, col=col)
+
+            fig.update_scenes(
+                xaxis=dict(visible=axis),
+                yaxis=dict(visible=axis),
+                zaxis=dict(visible=axis),
+                bgcolor=bgcolor,
+                camera=camera,
+                aspectmode="data"
+            )
+            # fig['layout']['scene']['aspectmode'] = "data"
+            return fig
+
+        fig = go.Figure()
+        for key, value in data_dict.items():
+            if isinstance(value, (torch.Tensor, np.ndarray)):
+                print(key, value.shape)
+            else:
+                print(key, value)
+            if key == "segment":
+                print("Key points:", np.sum(value).item())
+                fig = plot_pointcloud(data_dict['coord'][np.where(value)[0]], fig=fig, marker={'size': 10})
+            if key == 'coord':
+                fig = plot_pointcloud(value, fig=fig)
+        fig.show()
+        """
         data_dict = self.transform(data_dict)
         return data_dict
 
     # From DefaultDataset, modified since we need also the category in the metrics computation
     def prepare_test_data(self, idx):
-        # TODO: Why fragment? How do we prepare test data for Keypoints prediction
+        # TODO: Why fragment? How do we prepare test data for Keypoint prediction
         # load data
         data_dict = self.get_data(idx)
         data_dict = self.transform(data_dict)
+        return data_dict
+        """
         result_dict = dict(
             segment=data_dict.pop("segment"),
             name=data_dict.pop("name"),
@@ -212,4 +269,5 @@ class KeyPointNetDataset(Dataset):
             fragment_list[i] = self.post_transform(fragment_list[i])
         result_dict["fragment_list"] = fragment_list
         return result_dict
+        """
 

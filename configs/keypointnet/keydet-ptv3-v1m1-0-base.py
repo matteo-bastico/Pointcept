@@ -51,8 +51,8 @@ model = dict(
 )
 
 # scheduler settings
-epoch = 2
-eval_epoch = 2
+epoch = 1
+eval_epoch = 1
 # optimizer = dict(type="SGD", lr=0.1, momentum=0.9, weight_decay=0.0001, nesterov=True)
 # scheduler = dict(type="MultiStepLR", milestones=[0.6, 0.8], gamma=0.1)
 optimizer = dict(type="AdamW", lr=0.001, weight_decay=0.01)
@@ -96,7 +96,7 @@ data = dict(
         type=dataset_type,
         split="train",
         data_root=data_root,
-        category="airplane",
+        category="all",
         class_id2names=class_id2names,
         transform=[
             # dict(type="RandomDropout", dropout_ratio=0.2, dropout_application_ratio=0.2),
@@ -132,7 +132,7 @@ data = dict(
         type=dataset_type,
         split="val",
         data_root=data_root,
-        category="airplane",
+        category="all",
         class_id2names=class_id2names,
         transform=[
             dict(
@@ -156,67 +156,96 @@ data = dict(
         type=dataset_type,
         split="test",
         data_root=data_root,
-        category="airplane",
+        category="all",
         class_id2names=class_id2names,
         transform=[
-            dict(type="Copy", keys_dict={"segment": "origin_segment"}),
             dict(
-                type="GridSample",
-                grid_size=0.025,
-                hash_type="fnv",
-                mode="train",
-                keys=("coord", "color", "segment"),
-                return_inverse=True,
-            ),
-        ],
-        test_mode=True,
-        test_cfg=dict(
-            voxelize=dict(
                 type="GridSample",
                 grid_size=0.01,
                 hash_type="fnv",
-                mode="test",
+                mode="train",
+                keys=("coord", "color", "segment"),
                 return_grid_coord=True,
-                keys=("coord", "color"),
+                return_inverse=True,
             ),
-            crop=None,
-            post_transform=[
-                dict(type="ToTensor"),
-                dict(
-                    type="Collect",
-                    keys=("coord", "grid_coord", "index"),
-                    feat_keys=["coord"],
-                ),
-            ],
-            aug_transform=[
-                [dict(type="RandomScale", scale=[0.9, 0.9])],
-                [dict(type="RandomScale", scale=[0.95, 0.95])],
-                [dict(type="RandomScale", scale=[1, 1])],
-                [dict(type="RandomScale", scale=[1.05, 1.05])],
-                [dict(type="RandomScale", scale=[1.1, 1.1])],
-                [
-                    dict(type="RandomScale", scale=[0.9, 0.9]),
-                    dict(type="RandomFlip", p=1),
-                ],
-                [
-                    dict(type="RandomScale", scale=[0.95, 0.95]),
-                    dict(type="RandomFlip", p=1),
-                ],
-                [dict(type="RandomScale", scale=[1, 1]), dict(type="RandomFlip", p=1)],
-                [
-                    dict(type="RandomScale", scale=[1.05, 1.05]),
-                    dict(type="RandomFlip", p=1),
-                ],
-                [
-                    dict(type="RandomScale", scale=[1.1, 1.1]),
-                    dict(type="RandomFlip", p=1),
-                ],
-            ],
-        ),
-    ),
+            dict(type="ToTensor"),
+            dict(
+                type="Collect",
+                keys=("coord", "grid_coord", "category", "segment", "name"),
+                feat_keys=["coord"],
+            ),
+        ],
+        test_mode=True,
+    )
 )
+"""
+test=dict(
+    type=dataset_type,
+    split="test",
+    data_root=data_root,
+    category="airplane",
+    class_id2names=class_id2names,
+    transform=[
+        dict(type="Copy", keys_dict={"segment": "origin_segment"}),
+        dict(
+            type="GridSample",
+            grid_size=0.025,
+            hash_type="fnv",
+            mode="train",
+            keys=("coord", "color", "segment"),
+            return_inverse=True,
+        ),
+    ],
+    test_mode=True,
+    test_cfg=dict(
+        voxelize=dict(
+            type="GridSample",
+            grid_size=0.01,
+            hash_type="fnv",
+            mode="test",
+            return_grid_coord=True,
+            keys=("coord", "color"),
+        ),
+        crop=None,
+        post_transform=[
+            dict(type="ToTensor"),
+            dict(
+                type="Collect",
+                keys=("coord", "grid_coord", "index"),
+                feat_keys=["coord"],
+            ),
+        ],
+        aug_transform=[
+            [dict(type="RandomScale", scale=[0.9, 0.9])],
+            [dict(type="RandomScale", scale=[0.95, 0.95])],
+            [dict(type="RandomScale", scale=[1, 1])],
+            [dict(type="RandomScale", scale=[1.05, 1.05])],
+            [dict(type="RandomScale", scale=[1.1, 1.1])],
+            [
+                dict(type="RandomScale", scale=[0.9, 0.9]),
+                dict(type="RandomFlip", p=1),
+            ],
+            [
+                dict(type="RandomScale", scale=[0.95, 0.95]),
+                dict(type="RandomFlip", p=1),
+            ],
+            [
+                dict(type="RandomScale", scale=[1, 1]),
+                dict(type="RandomFlip", p=1)],
+            [
+                dict(type="RandomScale", scale=[1.05, 1.05]),
+                dict(type="RandomFlip", p=1),
+            ],
+            [
+                dict(type="RandomScale", scale=[1.1, 1.1]),
+                dict(type="RandomFlip", p=1),
+            ],
+        ],
+    ),
+),
+"""
 
 # hooks as in _base_ for SegSem
 
 # tester as in _base_ for SegSem
-
+test = dict(type="KeyDetTester", verbose=True)
