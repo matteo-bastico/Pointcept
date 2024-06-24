@@ -45,7 +45,8 @@ model = dict(
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ),
     criteria=[
-        dict(type="FocalLoss", loss_weight=1.0, ignore_index=-1),
+        # dict(type="FocalLoss", loss_weight=1.0, alpha=0.05),
+        dict(type="CrossEntropyLoss", loss_weight=1.0, ignore_index=-1, weight=[0.05, 0.95]),
         # dict(type="LovaszLoss", mode="multiclass", loss_weight=1.0, ignore_index=-1),
     ],
 )
@@ -102,8 +103,8 @@ data = dict(
             # dict(type="RandomDropout", dropout_ratio=0.2, dropout_application_ratio=0.2),
             # dict(type="RandomRotateTargetAngle", angle=(1/2, 1, 3/2), center=[0, 0, 0], axis="z", p=0.75),
             dict(type="RandomRotate", angle=[-1, 1], axis="z", center=[0, 0, 0], p=0.5),
-            # dict(type="RandomRotate", angle=[-1/6, 1/6], axis="x", p=0.5),
-            # dict(type="RandomRotate", angle=[-1/6, 1/6], axis="y", p=0.5),
+            dict(type="RandomRotate", angle=[-1/6, 1/6], axis="x", p=0.5),
+            dict(type="RandomRotate", angle=[-1/6, 1/6], axis="y", p=0.5),
             dict(type="RandomScale", scale=[0.9, 1.1]),
             # dict(type="RandomShift", shift=[0.2, 0.2, 0.2]),
             dict(type="RandomFlip", p=0.5),
@@ -111,7 +112,7 @@ data = dict(
             # dict(type="ElasticDistortion", distortion_params=[[0.2, 0.4], [0.8, 1.6]]),
             dict(
                 type="GridSample",
-                grid_size=0.01,
+                grid_size=0.1,
                 hash_type="fnv",
                 mode="train",
                 keys=("coord", "color", "segment"),
@@ -119,6 +120,7 @@ data = dict(
             ),
             # dict(type="SphereCrop", point_max=1000000, mode="random"),
             # dict(type="CenterShift", apply_z=False),
+            dict(type="ShufflePoint"),
             dict(type="ToTensor"),
             dict(
                 type="Collect",
@@ -137,7 +139,7 @@ data = dict(
         transform=[
             dict(
                 type="GridSample",
-                grid_size=0.01,
+                grid_size=0.1,
                 hash_type="fnv",
                 mode="train",
                 keys=("coord", "color", "segment"),
@@ -163,7 +165,7 @@ data = dict(
             dict(type="Copy", keys_dict={"segment": "origin_segment"}),
             dict(
                 type="GridSample",
-                grid_size=0.01,
+                grid_size=0.1,
                 hash_type="fnv",
                 mode="train",
                 keys=("coord", "color", "segment"),
