@@ -717,7 +717,10 @@ class KeyDetTester(TesterBase):
                 )
                 pred = np.load(pred_save_path)
                 if "origin_segment" in data_dict.keys():
+                    # We need also the origin_coord to compute correctly the geodesic distances
+                    assert "origin_coord" in data_dict.keys()
                     segment = data_dict["origin_segment"]
+                    coord = data_dict["origin_coord"]
             else:
                 for key in data_dict.keys():
                     if isinstance(data_dict[key], torch.Tensor):
